@@ -1,7 +1,7 @@
 #pragma once
 #include <random>
 
-template <typename T>
+template <typename T = int64_t>
 class Random {
    private:
     static std::mt19937 gen;
@@ -12,15 +12,18 @@ class Random {
     Random(const Random&) = delete;
     Random& operator=(const Random&) = delete;
 
-    static T getRand() {
+    [[nodiscard]] static T
+    get() {
         return std::uniform_int_distribution()(gen);
     }
 
-    static T getRand(T maxN) {
-        return std::uniform_int_distribution(T(0), maxN)(gen);
+    [[nodiscard]] static T
+    get(T maxN) {
+        return std::uniform_int_distribution(T{}, maxN)(gen);
     }
 
-    static T getRand(T minN, T maxN) {
+    [[nodiscard]] static T
+    get(T minN, T maxN) {
         return std::uniform_int_distribution(minN, maxN)(gen);
     }
 };

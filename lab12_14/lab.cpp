@@ -1,17 +1,22 @@
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <numeric>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "Random.hpp"
-using namespace nlohmann;
 
-constexpr auto filename = "students.json";
+constexpr auto filename = "students.txt";
 constexpr auto line = "-------------------------------------------\n";
+
+void clearScreen() {
+    if (system("clear") != 0)
+        std::cerr << "Screen cant be cleared!\n";
+}
 
 enum class Season : uint8_t {
     Winter = 1,
@@ -57,12 +62,12 @@ struct Student {
     void getInfo() const {
         std::cout << "ФИО:\t" << fullName << '\n';
         std::cout << "Группа:\t" << group << '\n';
+        std::cout << "МобТел:\t" << phoneNumber << '\n';
         std::cout << "Оценки:\t";
-        for (const auto& m : marks)
+        for (auto& m : marks)
             std::cout << m << ' ';
         std::cout << "(средний балл " << getGrade() << ")\n";
         std::cout << "Сезон:\t" << seasonToStr(favSeason) << '\n';
-        std::cout << "МобТел:\t" << phoneNumber << '\n';
         std::cout << line;
     }
 };
@@ -120,44 +125,12 @@ void findBySeason(const std::vector<Student>& students, Season season) {
             s.getInfo();
 }
 
-auto generateMarks() {
-    const uint8_t marksN = Random<uint8_t>::getRand(5, 15);
-    std::vector<int> vec;
-    vec.reserve(marksN);
-    for (uint8_t k = 0; k < marksN; k++)
-        vec.emplace_back(Random<int>::getRand(0, 10));
+std::vector<int> generateMarks() {
+    const uint8_t marksN = Random<uint8_t>::get(5, 15);
+    std::vector<int> vec(marksN);
+    for (auto& elem : vec)
+        elem = Random<int>::get(0, 10);
     return vec;
-}
-
-void saveToFile(const std::vector<Student>& students, std::string filename) {
-    json mainJs;
-    for (auto& s : students) {
-        json j;
-        j["Name"] = s.fullName;
-        j["Group"] = s.group;
-        j["Number"] = s.phoneNumber;
-        j["Marks"] = s.marks;
-        j["Season"] = s.favSeason;
-        mainJs += j;
-    }
-    std::ofstream(filename, std::ios::out) << mainJs;
-}
-
-void loadFromFile(std::vector<Student>& loadTo, std::string filename) {
-    json mainJs;
-    std::ifstream(filename, std::ios::in) >> mainJs;
-    loadTo.clear();
-    loadTo.reserve(mainJs.size());
-
-    for (const auto& j : mainJs) {
-        Student s;
-        j.at("Name").get_to(s.fullName);
-        j.at("Group").get_to(s.group);
-        j.at("Number").get_to(s.phoneNumber);
-        j.at("Marks").get_to(s.marks);
-        j.at("Season").get_to(s.favSeason);
-        loadTo.emplace_back(std::move(s));
-    }
 }
 
 void printStudents(const std::vector<Student>& students) {
@@ -165,6 +138,56 @@ void printStudents(const std::vector<Student>& students) {
         std::cout << idx++ << ") ";
         s.getInfo();
         std::cout << '\n';
+    }
+}
+
+void saveToFile(const std::vector<Student>& students, std::string filename) {
+    std::ofstream ofstr(filename);
+    for (auto& s : students) {
+        ofstr << s.fullName << '\n';
+        ofstr << s.group << '\n';
+        ofstr << s.phoneNumber << '\n';
+        for (const auto& m : s.marks)
+            ofstr << m << ' ';
+        ofstr << '\n';
+        ofstr << static_cast<int>(s.favSeason) << '\n';
+    }
+}
+
+void loadFromFile(std::vector<Student>& students, std::string filename) {
+    if (!std::filesystem::exists(filename)) {
+        std::cout << "Файла не существует\n";
+        return;
+    }
+    int mark, season;
+    std::string buffer;
+    std::stringstream sstr;
+
+    std::ifstream ifstr(filename);
+    students.clear();
+    while (ifstr.good()) {
+        std::getline(ifstr, buffer);
+        if (buffer.empty())
+            break;
+
+        Student s;
+        s.fullName = buffer;
+        std::getline(ifstr, s.group);
+        std::getline(ifstr, s.phoneNumber);
+        std::getline(ifstr, buffer);
+
+        sstr << buffer;
+        while (sstr >> mark)
+            s.marks.emplace_back(mark);
+        sstr.clear();
+
+        std::getline(ifstr, buffer);
+        sstr << buffer;
+        sstr >> season;
+        s.favSeason = static_cast<Season>(season);
+
+        students.emplace_back(std::move(s));
+        sstr.clear();
     }
 }
 
@@ -182,7 +205,7 @@ void sortStudents(std::vector<Student>& students) {
     switch (in) {
         case 1:
             std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) -> bool {
+                      [](const Student& s1, const Student& s2) {
                           auto sur1 = s1.fullName.substr(0, s1.fullName.find(' '));
                           auto sur2 = s2.fullName.substr(0, s2.fullName.find(' '));
                           return sur1 < sur2;
@@ -190,7 +213,7 @@ void sortStudents(std::vector<Student>& students) {
             break;
         case 2:
             std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) -> bool {
+                      [](const Student& s1, const Student& s2) {
                           auto sur1 = s1.fullName.substr(0, s1.fullName.find(' '));
                           auto sur2 = s2.fullName.substr(0, s2.fullName.find(' '));
                           return sur1 > sur2;
@@ -198,47 +221,46 @@ void sortStudents(std::vector<Student>& students) {
             break;
         case 3:
             std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) -> bool {
+                      [](const Student& s1, const Student& s2) {
                           return s1.group < s2.group;
                       });
             break;
         case 4:
             std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) -> bool {
+                      [](const Student& s1, const Student& s2) {
                           return s1.phoneNumber < s2.phoneNumber;
                       });
             break;
         case 5:
             std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) -> bool {
+                      [](const Student& s1, const Student& s2) {
                           return s1.getGrade() < s2.getGrade();
                       });
             break;
         case 6:
             std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) -> bool {
+                      [](const Student& s1, const Student& s2) {
                           return s1.getGrade() > s2.getGrade();
                       });
             break;
     }
 }
 
-template <typename Func>
-void doAtIndex(std::vector<Student>& students, Func&& func) {
+void doAtIndex(std::vector<Student>& students, auto func) {
     printStudents(students);
 
     int in;
     std::cout << "Выберите студента\n";
     std::cin >> in;
     in -= 1;
-    if (in >= 0 && in < students.size())
+    if (in > 0 && in < students.size())
         func(students, in);
     else
         std::cout << "Неверный ввод\n";
 }
 
 int main() {
-    int errCode = system("clear");
+    clearScreen();
     std::vector<Student> students{
         Student{"Тихонов Артём Артёмович", "ГР-345", "375 29 303-51-26", {3, 4, 5, 0, 2}, Season::Summer},
         Student{"Игнатов Даниил Иванович", "ГР-345", "375 29 061-44-75", generateMarks(), Season::Autumn},
@@ -307,22 +329,21 @@ int main() {
             case 9:
                 std::cout << "Удаление студента\nВыберите студента для удаления\n";
                 doAtIndex(students,
-                          [](auto& range, int k) -> void {
+                          [](auto& range, int k) {
                               range.erase(range.begin() + k);
                           });
                 break;
             case 10:
                 std::cout << "Смена имени студента\n";
                 doAtIndex(students,
-                          [](auto& range, int k) -> void {
+                          [](auto& range, int k) {
                               std::cout << "Введите новое имя студента: ";
                               std::cin.ignore();
                               std::getline(std::cin, range[k].fullName);
                           });
                 break;
             case 99:
-                if (system("clear") != 0)
-                    return 0;
+                clearScreen();
                 break;
 
             default:

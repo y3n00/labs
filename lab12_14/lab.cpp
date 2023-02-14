@@ -10,12 +10,11 @@
 
 #include "Random.hpp"
 
-constexpr auto filename = "students.txt";
-constexpr auto line = "-------------------------------------------\n";
+constexpr static auto filename = "students.txt";
+constexpr static auto line = "-------------------------------------------\n";
 
-void clearScreen() {
-    if (system("clear") != 0)
-        std::cerr << "Screen cant be cleared!\n";
+int clearScreen() {
+    return system("clear");
 }
 
 enum class Season : uint8_t {
@@ -44,6 +43,20 @@ std::string seasonToStr(Season s) {
     return str;
 }
 
+Season seasonFromInt(int value) {
+    value %= 4;
+    switch (value) {
+        case 0:
+            return Season::Autumn;
+        case 1:
+            return Season::Winter;
+        case 2:
+            return Season::Spring;
+        case 3:
+            return Season::Summer;
+    }
+}
+
 struct Student {
     std::string fullName;
     std::string group;
@@ -64,8 +77,8 @@ struct Student {
         std::cout << "Группа:\t" << group << '\n';
         std::cout << "МобТел:\t" << phoneNumber << '\n';
         std::cout << "Оценки:\t";
-        for (auto& m : marks)
-            std::cout << m << ' ';
+        for (auto& mark : marks)
+            std::cout << mark << ' ';
         std::cout << "(средний балл " << getGrade() << ")\n";
         std::cout << "Сезон:\t" << seasonToStr(favSeason) << '\n';
         std::cout << line;
@@ -90,8 +103,14 @@ Student createStudent() {
     std::getline(std::cin, str);
     std::stringstream sstr;
     sstr << str;
-    while (sstr >> mark)
+    while (sstr >> mark) {
+        if (mark > 10)
+            mark = 10;
+        else if (mark < 0)
+            mark = 0;
+
         s.marks.emplace_back(mark);
+    }
 
     int SeasonInput;
     std::cout << "Выберите любимую пору года:\n";
@@ -100,7 +119,7 @@ Student createStudent() {
     std::cout << "3) Лето\n";
     std::cout << "4) Осень\n";
     std::cin >> SeasonInput;
-    s.favSeason = static_cast<Season>(SeasonInput);
+    s.favSeason = seasonFromInt(SeasonInput);
     return s;
 }
 
@@ -113,24 +132,26 @@ void findByPhoneNumber(const std::vector<Student>& students, const std::string& 
 
 void findWithGrade(const std::vector<Student>& students, float grade = 7.0f) {
     std::cout << "Студенты с баллом равным или выше " << grade << '\n';
-    for (auto& s : students)
+    for (auto& s : students) {
         if (s.getGrade() >= grade)
             s.getInfo();
+    }
 }
 
 void findBySeason(const std::vector<Student>& students, Season season) {
     std::cout << "Студенты которые предпочитают " << seasonToStr(season) << '\n';
-    for (auto& s : students)
+    for (auto& s : students) {
         if (s.favSeason == season)
             s.getInfo();
+    }
 }
 
 std::vector<int> generateMarks() {
     const uint8_t marksN = Random<uint8_t>::get(5, 15);
-    std::vector<int> vec(marksN);
-    for (auto& elem : vec)
-        elem = Random<int>::get(0, 10);
-    return vec;
+    std::vector<int> marks(marksN);
+    for (auto& mark : marks)
+        mark = Random<int>::get(0, 10);
+    return marks;
 }
 
 void printStudents(const std::vector<Student>& students) {
@@ -147,8 +168,8 @@ void saveToFile(const std::vector<Student>& students, std::string filename) {
         ofstr << s.fullName << '\n';
         ofstr << s.group << '\n';
         ofstr << s.phoneNumber << '\n';
-        for (const auto& m : s.marks)
-            ofstr << m << ' ';
+        for (const auto& mark : s.marks)
+            ofstr << mark << ' ';
         ofstr << '\n';
         ofstr << static_cast<int>(s.favSeason) << '\n';
     }
@@ -177,8 +198,14 @@ void loadFromFile(std::vector<Student>& students, std::string filename) {
         std::getline(ifstr, buffer);
 
         sstr << buffer;
-        while (sstr >> mark)
+        while (sstr >> mark) {
+            if (mark > 10)
+                mark = 10;
+            else if (mark < 0)
+                mark = 0;
+
             s.marks.emplace_back(mark);
+        }
         sstr.clear();
 
         std::getline(ifstr, buffer);
@@ -204,44 +231,44 @@ void sortStudents(std::vector<Student>& students) {
     std::cin >> in;
     switch (in) {
         case 1:
-            std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) {
-                          auto sur1 = s1.fullName.substr(0, s1.fullName.find(' '));
-                          auto sur2 = s2.fullName.substr(0, s2.fullName.find(' '));
-                          return sur1 < sur2;
-                      });
+            std::ranges::sort(students,
+                              [](const auto& s1, const auto& s2) {
+                                  auto stud1Surname = s1.fullName.substr(0, s1.fullName.find(' '));
+                                  auto stud2Surname = s2.fullName.substr(0, s2.fullName.find(' '));
+                                  return stud1Surname < stud2Surname;
+                              });
             break;
         case 2:
-            std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) {
-                          auto sur1 = s1.fullName.substr(0, s1.fullName.find(' '));
-                          auto sur2 = s2.fullName.substr(0, s2.fullName.find(' '));
-                          return sur1 > sur2;
-                      });
+            std::ranges::sort(students,
+                              [](const auto& s1, const auto& s2) {
+                                  auto stud1Surname = s1.fullName.substr(0, s1.fullName.find(' '));
+                                  auto stud2Surname = s2.fullName.substr(0, s2.fullName.find(' '));
+                                  return stud1Surname > stud2Surname;
+                              });
             break;
         case 3:
-            std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) {
-                          return s1.group < s2.group;
-                      });
+            std::ranges::sort(students,
+                              [](const auto& s1, const auto& s2) {
+                                  return s1.group < s2.group;
+                              });
             break;
         case 4:
-            std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) {
-                          return s1.phoneNumber < s2.phoneNumber;
-                      });
+            std::ranges::sort(students,
+                              [](const auto& s1, const auto& s2) {
+                                  return s1.phoneNumber < s2.phoneNumber;
+                              });
             break;
         case 5:
-            std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) {
-                          return s1.getGrade() < s2.getGrade();
-                      });
+            std::ranges::sort(students,
+                              [](const auto& s1, const auto& s2) {
+                                  return s1.getGrade() < s2.getGrade();
+                              });
             break;
         case 6:
-            std::sort(students.begin(), students.end(),
-                      [](const Student& s1, const Student& s2) {
-                          return s1.getGrade() > s2.getGrade();
-                      });
+            std::ranges::sort(students,
+                              [](const auto& s1, const auto& s2) {
+                                  return s1.getGrade() > s2.getGrade();
+                              });
             break;
     }
 }
@@ -253,7 +280,7 @@ void doAtIndex(std::vector<Student>& students, auto func) {
     std::cout << "Выберите студента\n";
     std::cin >> in;
     in -= 1;
-    if (in > 0 && in < students.size())
+    if (in >= 0 && in < students.size())
         func(students, in);
     else
         std::cout << "Неверный ввод\n";
@@ -262,10 +289,10 @@ void doAtIndex(std::vector<Student>& students, auto func) {
 int main() {
     clearScreen();
     std::vector<Student> students{
-        Student{"Тихонов Артём Артёмович", "ГР-345", "375 29 303-51-26", {3, 4, 5, 0, 2}, Season::Summer},
-        Student{"Игнатов Даниил Иванович", "ГР-345", "375 29 061-44-75", generateMarks(), Season::Autumn},
-        Student{"Миронова Мария Григорьевна", "ГР-345", "375 29 532-25-01", {9, 10, 8, 9, 7}, Season::Winter},
-        Student{"Поликарпова Варвара Артемьевна", "ГР-345", "375 29 849-65-66", generateMarks(), Season::Spring}};
+        Student{"Тихонов Артём Артёмович", "ГР-345", "+375293035126", {3, 4, 5, 0, 2}, Season::Summer},
+        Student{"Игнатов Даниил Иванович", "ГР-345", "+375290614475", generateMarks(), Season::Autumn},
+        Student{"Миронова Мария Григорьевна", "ГР-345", "+375295322501", {9, 10, 8, 9, 7}, Season::Winter},
+        Student{"Поликарпова Варвара Артемьевна", "ГР-345", "+375298496566", generateMarks(), Season::Spring}};
 
     int in;
     while (true) {
@@ -280,6 +307,7 @@ int main() {
         std::cout << "9) Удалить студента по номеру\n";
         std::cout << "10) Смена имени студенту\n";
         std::cout << "99) Очистить экран\n";
+        std::cout << "0) Выход\n";
 
         std::cin >> in;
         switch (in) {
@@ -345,8 +373,7 @@ int main() {
             case 99:
                 clearScreen();
                 break;
-
-            default:
+            case 0:
                 return 0;
         }
     }

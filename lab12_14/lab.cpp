@@ -104,12 +104,7 @@ Student createStudent() {
     std::stringstream sstr;
     sstr << str;
     while (sstr >> mark) {
-        if (mark > 10)
-            mark = 10;
-        else if (mark < 0)
-            mark = 0;
-
-        s.marks.emplace_back(mark);
+        s.marks.emplace_back(std::clamp(mark, 0, 10));
     }
 
     int SeasonInput;
@@ -200,12 +195,7 @@ void loadFromFile(std::vector<Student>& students, std::string filename) {
 
         sstr << buffer;
         while (sstr >> mark) {
-            if (mark > 10)
-                mark = 10;
-            else if (mark < 0)
-                mark = 0;
-
-            s.marks.emplace_back(mark);
+            s.marks.emplace_back(std::clamp(mark, 0, 10));
         }
         sstr.clear();
 

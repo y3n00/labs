@@ -125,9 +125,10 @@ Student createStudent() {
 
 void findByPhoneNumber(const std::vector<Student>& students, const std::string& phoneNumberPart) {
     std::cout << "Студенты с " << phoneNumberPart << " в номере\n";
-    for (auto& s : students)
+    for (auto& s : students) {
         if (s.hasNumberPart(phoneNumberPart))
             s.getInfo();
+    }
 }
 
 void findWithGrade(const std::vector<Student>& students, float grade = 7.0f) {
@@ -329,7 +330,7 @@ int main() {
 
                 int s;
                 std::cin >> s;
-                findBySeason(students, static_cast<Season>(s));
+                findBySeason(students, seasonFromInt(std::abs(s)));
                 break;
             }
             case 3:

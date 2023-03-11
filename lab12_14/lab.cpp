@@ -3,15 +3,14 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
-#include <ranges>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "Random.hpp"
 
-constexpr static auto filename = "students.txt";
-constexpr static auto line = "-------------------------------------------\n";
+static const auto filename = "students.txt";
+static const auto line = "-------------------------------------------\n";
 
 int clearScreen() {
     return system("clear");
@@ -118,7 +117,8 @@ Student createStudent() {
     return s;
 }
 
-void findByPhoneNumber(const std::vector<Student>& students, const std::string& phoneNumberPart) {
+void findByPhoneNumber(const std::vector<Student>& students,
+                       const std::string& phoneNumberPart) {
     std::cout << "Студенты с " << phoneNumberPart << " в номере\n";
     for (auto& s : students) {
         if (s.hasNumberPart(phoneNumberPart))
@@ -213,7 +213,7 @@ void sortStudents(std::vector<Student>& students) {
     int in;
     std::cout << "1) Фамилии А-Я\n";
     std::cout << "2) Фамилии Я-А\n";
-    std::cout << "3) Номеру группы\n";
+    std::cout << "3) Группе\n";
     std::cout << "4) Номеру телефона\n";
     std::cout << "5) Среднему баллу 1-10\n";
     std::cout << "6) Среднему баллу 10-1\n";
@@ -222,44 +222,44 @@ void sortStudents(std::vector<Student>& students) {
     std::cin >> in;
     switch (in) {
         case 1:
-            std::ranges::sort(students,
-                              [](const auto& s1, const auto& s2) {
-                                  auto stud1Surname = s1.fullName.substr(0, s1.fullName.find(' '));
-                                  auto stud2Surname = s2.fullName.substr(0, s2.fullName.find(' '));
-                                  return stud1Surname < stud2Surname;
-                              });
+            std::sort(students.begin(), students.end(),
+                      [](const Student& s1, const Student& s2) {
+                          auto stud1Surname = s1.fullName.substr(0, s1.fullName.find(' '));
+                          auto stud2Surname = s2.fullName.substr(0, s2.fullName.find(' '));
+                          return stud1Surname < stud2Surname;
+                      });
             break;
         case 2:
-            std::ranges::sort(students,
-                              [](const auto& s1, const auto& s2) {
-                                  auto stud1Surname = s1.fullName.substr(0, s1.fullName.find(' '));
-                                  auto stud2Surname = s2.fullName.substr(0, s2.fullName.find(' '));
-                                  return stud1Surname > stud2Surname;
-                              });
+            std::sort(students.begin(), students.end(),
+                      [](const Student& s1, const Student& s2) {
+                          auto stud1Surname = s1.fullName.substr(0, s1.fullName.find(' '));
+                          auto stud2Surname = s2.fullName.substr(0, s2.fullName.find(' '));
+                          return stud1Surname > stud2Surname;
+                      });
             break;
         case 3:
-            std::ranges::sort(students,
-                              [](const auto& s1, const auto& s2) {
-                                  return s1.group < s2.group;
-                              });
+            std::sort(students.begin(), students.end(),
+                      [](const Student& s1, const Student& s2) {
+                          return s1.group < s2.group;
+                      });
             break;
         case 4:
-            std::ranges::sort(students,
-                              [](const auto& s1, const auto& s2) {
-                                  return s1.phoneNumber < s2.phoneNumber;
-                              });
+            std::sort(students.begin(), students.end(),
+                      [](const Student& s1, const Student& s2) {
+                          return s1.phoneNumber < s2.phoneNumber;
+                      });
             break;
         case 5:
-            std::ranges::sort(students,
-                              [](const auto& s1, const auto& s2) {
-                                  return s1.getGrade() < s2.getGrade();
-                              });
+            std::sort(students.begin(), students.end(),
+                      [](const Student& s1, const Student& s2) {
+                          return s1.getGrade() < s2.getGrade();
+                      });
             break;
         case 6:
-            std::ranges::sort(students,
-                              [](const auto& s1, const auto& s2) {
-                                  return s1.getGrade() > s2.getGrade();
-                              });
+            std::sort(students.begin(), students.end(),
+                      [](const Student& s1, const Student& s2) {
+                          return s1.getGrade() > s2.getGrade();
+                      });
             break;
     }
 }
